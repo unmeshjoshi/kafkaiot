@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://packages.confluent.io/maven/'
+    }
+}
+
+dependencies {
+    implementation 'org.apache.kafka:kafka-clients:3.3.2'
+    implementation 'io.confluent:kafka-avro-serializer:7.3.1'
+    implementation 'org.apache.avro:avro:1.11.0'
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
+    implementation group: 'org.eclipse.tahu', name: 'tahu-core', version: '1.' +
+            '0.10'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:4.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:4.8.2'
+    testImplementation 'org.apache.kafka:kafka_2.13:3.3.2:test'
+    testImplementation 'org.apache.kafka:kafka-streams-test-utils:3.3.2'
+    testImplementation 'org.springframework.kafka:spring-kafka-test:2.8.8'
+    testImplementation 'org.testcontainers:testcontainers:1.17.6'
+    testImplementation 'org.testcontainers:kafka:1.17.6'
+    testImplementation 'org.testcontainers:rabbitmq:1.17.6'
+}
+
+test {
+
+    minHeapSize = "2g" // initial heap size
+    maxHeapSize = "2g" // maximum heap size
+    maxParallelForks = 1
+}
