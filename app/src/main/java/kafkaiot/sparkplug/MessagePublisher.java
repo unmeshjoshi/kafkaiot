@@ -19,12 +19,12 @@ public class MessagePublisher {
         this.mqttClient = mqttClient;
     }
 
-    public void publishMessage(SparkPlugBTopic topic,
+    public void publishMessage(String topicName,
                                SparkplugBPayload payload) throws MqttException, IOException {
         MqttMessage message = new MqttMessage();
         payload.setTimestamp(new Date());
         SparkplugBPayloadEncoder encoder = new SparkplugBPayloadEncoder();
         message.setPayload(encoder.getBytes(payload, false));
-        mqttClient.publish(topic.getTopic(), message);
+        mqttClient.publish(topicName, message);
     }
 }
