@@ -64,7 +64,7 @@ public class MqttTest {
 
             client.subscribe(topic, subQos);
 
-            Scratchpad plc = new Scratchpad(broker);
+            SparkplugBProducer plc = new SparkplugBProducer(broker);
             plc.produceSparkPlugBMessage();
 
             client.disconnect();

@@ -15,26 +15,28 @@ public class MqttToKafkaProducer {
     private static final String BOOTSTRAP_SERVERS = "localhost:9092";
     private static KafkaProducer<String, String> producer;
     private static String broker;
+    private final String bootstrapServers;
+    private final MqttClient mqttClient;
 
-    public MqttToKafkaProducer(String broker) {
+    public MqttToKafkaProducer(String broker, String bootstrapServers) throws MqttException {
         this.broker = broker;
-    }
-
-    public void consumeAndProduce() {
+        this.bootstrapServers = bootstrapServers;
         String clientId = MqttAsyncClient.generateClientId();
         MemoryPersistence persistence = new MemoryPersistence();
+        mqttClient = new MqttClient(broker, clientId, persistence);
+    }
 
+    public void consumeMqttAndProduceOnKafka() {
         // Kafka producer configuration
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("schema.registry.url", SCHEMA_REGISTRY_URL);
 
         producer = new KafkaProducer<>(props);
 
         try {
-            MqttClient mqttClient = new MqttClient(broker, clientId, persistence);
+            mqttClient.connect();
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
@@ -50,7 +52,11 @@ public class MqttToKafkaProducer {
                     System.out.println("received   " + key + " = " + payload);
                     // Produce the message to Kafka
                     ProducerRecord<String, String> record = new ProducerRecord<>("sparkplug_b_messages", key, payload);
-                    producer.send(record);
+                    try {
+                        producer.send(record);
+                    } catch(Exception e) {
+                        System.out.println("e = " + e);
+                    }
                 }
 
                 @Override
@@ -58,7 +64,6 @@ public class MqttToKafkaProducer {
                     // Log the completion of message delivery
                 }
             });
-            mqttClient.connect();
             mqttClient.subscribe("spBv1.0/group1/#");
 
         } catch (MqttException me) {
@@ -69,6 +74,6 @@ public class MqttToKafkaProducer {
     private static String extractKeyFromTopic(String topic) {
         // Assuming topic format: spBv1.0/group1/<message_type>/node1/device1
         String[] parts = topic.split("/");
-        return parts[3] + "_" + parts[4];
+        return parts[4] + "_" + parts[5];
     }
 }

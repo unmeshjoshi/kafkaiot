@@ -1,33 +1,69 @@
 package kafkaiot.sparkplug;
 
-import org.eclipse.tahu.protobuf.SparkplugBProto.Payload;
-import org.eclipse.tahu.protobuf.SparkplugBProto.Payload.Metric;
-
-import java.util.List;
+import org.eclipse.tahu.SparkplugException;
+import org.eclipse.tahu.message.model.Template;
+import org.eclipse.tahu.protobuf.SparkplugBProto;
 
 public class SparkPlugDevice {
 
     private final String deviceName;
+    private final Template deviceTemplate;
 
-    private final List<Metric> deviceMetrics;
-
-    public SparkPlugDevice(String deviceName, List<Metric> deviceMetrics) {
+    public SparkPlugDevice(String deviceName, Template deviceTemplate) {
         this.deviceName = deviceName;
-        this.deviceMetrics = deviceMetrics;
+        this.deviceTemplate = deviceTemplate;
     }
 
-    public Payload buildDbirthMessage() {
-        Payload.Builder payloadBuilder = Payload.newBuilder();
+    public String getDeviceName() {
+        return deviceName;
+    }
 
-        // Add metrics to the payload
-        for (Metric metric : deviceMetrics) {
-            payloadBuilder.addMetrics(metric);
-        }
+    public Template getDeviceTemplate() {
+        return deviceTemplate;
+    }
 
-        // Set the timestamp and sequence number
-        payloadBuilder.setTimestamp(System.currentTimeMillis());
-        payloadBuilder.setSeq(0);  // Sequence can be incremented as needed
+    // Method to build and send DBIRTH message
+    public void sendDBIRTH() throws SparkplugException {
+        // Example DBIRTH message construction
+        Template dbirthTemplate = createDBIRTHTemplate();
+        // Publish DBIRTH message
+        publishMessage(SparkPlugBTopic.DBIRTH.getDeviceTopic("ChassisAssembly",
+                deviceName), dbirthTemplate);
+    }
 
-        return payloadBuilder.build();
-   }
+    // Method to build and send DDATA message
+    public void sendDDATA() throws SparkplugException {
+        // Example DDATA message construction
+        Template ddataTemplate = createDDATATemplate();
+        // Publish DDATA message
+        publishMessage(SparkPlugBTopic.DDATA.getDeviceTopic("ChassisAssembly",
+                deviceName), ddataTemplate);
+    }
+
+    private Template createDBIRTHTemplate() throws SparkplugException {
+        // Logic to create a DBIRTH UDT Template
+        return new Template.TemplateBuilder()
+                .version("v1.0")
+                .templateRef(deviceName)
+                .definition(true)
+                .addMetrics(deviceTemplate.getMetrics()) // Assume we reuse metrics for simplicity
+                .createTemplate();
+    }
+
+    private Template createDDATATemplate() throws SparkplugException {
+        // Logic to create a DDATA UDT Template
+        return new Template.TemplateBuilder()
+                .version("v1.0")
+                .templateRef(deviceName)
+                .definition(false) // Not a definition, so false
+                .addMetrics(deviceTemplate.getMetrics())
+                .createTemplate();
+    }
+
+    private void publishMessage(String topic, Template template) {
+        // Logic to publish message over MQTT or other protocol
+        System.out.println("Publishing to topic: " + topic);
+        System.out.println("Message: " + template);
+        // Actual publish code would go here
+    }
 }

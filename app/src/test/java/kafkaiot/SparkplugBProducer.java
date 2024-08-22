@@ -4,10 +4,10 @@ import org.eclipse.paho.client.mqttv3.*;
 
 import java.util.Random;
 
-public class Scratchpad {
+public class SparkplugBProducer {
     String broker;
 
-    public Scratchpad(String broker) {
+    public SparkplugBProducer(String broker) {
         this.broker = broker;
     }
 

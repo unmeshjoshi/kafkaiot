@@ -1,12 +1,10 @@
 package kafkaiot.sparkplug;
 
-import kafkaiot.sparkplug.topics.SparkPlugBTopic;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.tahu.message.SparkplugBPayloadEncoder;
 import org.eclipse.tahu.message.model.SparkplugBPayload;
-import org.eclipse.tahu.protobuf.SparkplugBProto;
 
 import java.io.IOException;
 import java.util.Date;

@@ -1,5 +1,6 @@
 package kafkaiot.sparkplug.topics;
 
+import kafkaiot.sparkplug.SparkPlugBTopic;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

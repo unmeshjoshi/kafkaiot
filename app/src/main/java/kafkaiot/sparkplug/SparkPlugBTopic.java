@@ -1,4 +1,4 @@
-package kafkaiot.sparkplug.topics;
+package kafkaiot.sparkplug;
 
 public enum SparkPlugBTopic {
     DBIRTH("DBIRTH"),
