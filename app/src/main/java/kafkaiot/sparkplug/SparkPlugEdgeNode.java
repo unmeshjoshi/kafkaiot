@@ -1,20 +1,30 @@
 package kafkaiot.sparkplug;
 
+import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.tahu.SparkplugException;
+import org.eclipse.tahu.message.SparkplugBPayloadEncoder;
+import org.eclipse.tahu.message.model.Metric;
+import org.eclipse.tahu.message.model.SparkplugBPayload;
 import org.eclipse.tahu.message.model.Template;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import static org.eclipse.tahu.message.model.MetricDataType.Boolean;
+import static org.eclipse.tahu.message.model.MetricDataType.Int64;
 
 public class SparkPlugEdgeNode {
 
     private final String edgeNodeName;
     private final Template template;
     private final List<SparkPlugDevice> devices;
+    private final MqttClient mqttClient;
 
-    public SparkPlugEdgeNode(String edgeNodeName, Template template) {
+    public SparkPlugEdgeNode(String edgeNodeName, Template template, MqttClient mqttClient) {
         this.edgeNodeName = edgeNodeName;
         this.template = template;
+        this.mqttClient = mqttClient;
         this.devices = new ArrayList<>();
     }
 
@@ -27,9 +37,11 @@ public class SparkPlugEdgeNode {
     }
 
     public void sendNBIRTH() throws SparkplugException {
-        // Example NBIRTH message construction
         Template nbirthTemplate = createNBIRHTTemplate();
-        // Publish NBIRTH message
+
+        nbirthTemplate.addMetric(new Metric.MetricBuilder("bdSeq", Int64, (long) bdSeq).createMetric());
+        nbirthTemplate.addMetric(new Metric.MetricBuilder("Node Control/Rebirth", Boolean, false).createMetric());
+
         publishMessage(SparkPlugBTopic.NBIRTH.getNodeTopic(edgeNodeName),
                 nbirthTemplate);
     }
@@ -37,15 +49,31 @@ public class SparkPlugEdgeNode {
     public void sendNDATA() throws SparkplugException {
         // Example NDATA message construction
         Template ndataTemplate = createNDATATemplate();
-        // Publish NDATA message
         publishMessage(SparkPlugBTopic.NDATA.getNodeTopic(edgeNodeName), ndataTemplate);
     }
 
-    public void sendDeviceMessages() throws SparkplugException {
+    public void sendDeviceMessages() {
+        sendDeviceBirthMessages();
+        sendDeviceDataMessages(); //TDODO: do this periodically
+    }
+
+    private void sendDeviceDataMessages() {
         for (SparkPlugDevice device : devices) {
-            device.sendDBIRTH();
-            device.sendDDATA();
+            SparkPlugDevice.DeviceMessage ddata = device.getDDATA();
+            publishMessage(ddata.topic, ddata.template);
         }
+
+    }
+
+    private void sendDeviceBirthMessages() {
+        for (SparkPlugDevice device : devices) {
+            sendDBirth(device);
+        }
+    }
+
+    private void sendDBirth(SparkPlugDevice device) {
+        SparkPlugDevice.DeviceMessage dbirth = device.createDBIRTH();
+        publishMessage(dbirth.topic, dbirth.template);
     }
 
     private Template createNBIRHTTemplate() throws SparkplugException {
@@ -67,9 +95,33 @@ public class SparkPlugEdgeNode {
     }
 
     private void publishMessage(String topic, Template template) {
-        // Logic to publish message over MQTT or other protocol
-        System.out.println("Publishing to topic: " + topic);
-        System.out.println("Message: " + template);
-        // Actual publish code would go here
+        try {
+            System.out.println("Publishing to topic: " + topic);
+            System.out.println("Message: " + template);
+            // Actual publish code would go here
+            SparkplugBPayload payload = new SparkplugBPayload(new Date(), template.getMetrics(),
+                    getSeqNum(), newUUID(), null);
+
+            mqttClient.publish(topic, new SparkplugBPayloadEncoder().getBytes(payload, false), 0, false);
+
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private int bdSeq = 0; //When to increment this?
+    private int seq = 0;
+
+    // Used to add the sequence number
+    private long getSeqNum() throws Exception {
+        System.out.println("seq: " + seq);
+        if (seq == 256) {
+            seq = 0;
+        }
+        return seq++;
+    }
+
+    private String newUUID() {
+        return java.util.UUID.randomUUID().toString();
     }
 }
