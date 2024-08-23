@@ -1,7 +1,10 @@
 package kafkaiot.sparkplug;
 
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import kafkaiot.containers.ConfluentKafkaContainer;
 import kafkaiot.containers.RabitMQWithMqttContainer;
+import org.apache.avro.Schema;
 import org.apache.kafka.test.TestUtils;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -20,6 +23,7 @@ import java.util.List;
 public class SchemaRegistryIntegrationTest {
     private ConfluentKafkaContainer kafkaContainer;
     private RabitMQWithMqttContainer rabbitMQContainer;
+    private SchemaRegistryClient schemaRegistryClient;
 
     @Before
     public void startContainers() {
@@ -28,6 +32,11 @@ public class SchemaRegistryIntegrationTest {
 
         rabbitMQContainer = new RabitMQWithMqttContainer();
         rabbitMQContainer.start();
+
+        schemaRegistryClient
+                = new CachedSchemaRegistryClient(kafkaContainer.getSchemaRegistryUrl(),
+                100);
+
     }
 
     @After
@@ -66,11 +75,18 @@ public class SchemaRegistryIntegrationTest {
         edgeNode.sendNDATA();
         edgeNode.sendDeviceMessages();
 
-        TestUtils.waitForCondition(() -> receivedMessages.size() > 2, "waiting for messages to arrive");
+        //TODO: How to store schema Ids to be used for DData and NData messages?
+        //TODO: How to handle schema updates?
+        //TODO: How to handle errors when schema changes are not compatible?
+        TestUtils.waitForCondition(() -> schemaRegistryClient.getAllVersions(
+                "ChassisAssembly").size() > 0 && schemaRegistryClient.getAllVersions(
+                        "RobotArm").size() > 0,
+                            10000, 2000,
+                () -> "Waiting for Node and Device schemas to be registered");
 
     }
 
-    private static void subcribeForSparkplugMessages(MqttClient mqttClient, String edgeNodeName, List receivedMessages) throws MqttException {
+    private void subcribeForSparkplugMessages(MqttClient mqttClient, String edgeNodeName, List receivedMessages) throws MqttException {
         mqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
@@ -78,7 +94,9 @@ public class SchemaRegistryIntegrationTest {
                 System.out.println("Connection lost = " + cause);
             }
 
-            @Override
+            @Override //TODO: We should have separate subscribers for NBIRTH
+            // and DBIRTH, so that schema creation can be separated from this
+            // method.
             public void messageArrived(String topic, MqttMessage message) {
                 try {
 
@@ -87,6 +105,19 @@ public class SchemaRegistryIntegrationTest {
                     SparkplugBPayloadDecoder decoder = new SparkplugBPayloadDecoder();
                     SparkplugBPayload inboundPayload = decoder.buildFromByteArray(message.getPayload(), null);
 
+                    AvroSchemaMapper avroSchemaMapper = new AvroSchemaMapper();
+
+                    if (isNBirth(topic)) {
+                        String edgeNodeName =
+                                SparkPlugBTopic.NBIRTH.getEdgeNodeNameFromTopic(topic);
+                        Schema schema = avroSchemaMapper.generateAvroSchemaFromTemplate(inboundPayload.getMetrics(), edgeNodeName);
+                        schemaRegistryClient.register(edgeNodeName, schema);
+
+                    } else if (isDBirth(topic)) {
+                        String deviceNodeName = SparkPlugBTopic.DBIRTH.getDeviceNameFromTopic(topic);
+                        Schema schema = avroSchemaMapper.generateAvroSchemaFromTemplate(inboundPayload.getMetrics(), deviceNodeName);
+                        schemaRegistryClient.register(deviceNodeName, schema);
+                    }
                     // Debug
                     for (Metric metric : inboundPayload.getMetrics()) {
                         System.out.println("Metric " + metric.getName() + "=" + metric.getValue());
@@ -99,6 +130,14 @@ public class SchemaRegistryIntegrationTest {
                     throw new RuntimeException(e);
                 }
 
+            }
+
+            private boolean isDBirth(String topic) {
+                return topic.contains(SparkPlugBTopic.DBIRTH.name());
+            }
+
+            private boolean isNBirth(String topic) {
+                return topic.contains(SparkPlugBTopic.NBIRTH.name());
             }
 
             @Override

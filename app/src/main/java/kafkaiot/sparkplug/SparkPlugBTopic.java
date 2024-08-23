@@ -45,4 +45,15 @@ public enum SparkPlugBTopic {
         return String.format("%s/%s/%s/%s", NAMESPACE, GROUP_ID, topicType, edgeNode);
     }
 
+    public String getEdgeNodeNameFromTopic(String topic) {
+        // Assuming topic format: spBv1/0/sparkplug/b/NBIRTH/ChassisAssembly
+        String[] parts = topic.split("/");
+        return parts[5];
+    }
+
+    public String getDeviceNameFromTopic(String topic) {
+        // Assuming topic format: spBv1/0/sparkplug/b/DBIRTH/ChassisAssembly/RobotArm
+        String[] parts = topic.split("/");
+        return parts[6];
+    }
 }

@@ -93,4 +93,20 @@ public class SparkPlugBTopicTest {
             // Expected
         }
     }
+
+    @Test
+    public void getsEdgeNodeNameFromTopicName() {
+        String edgeNodeName =
+                SparkPlugBTopic.NBIRTH.getEdgeNodeNameFromTopic(SparkPlugBTopic.NBIRTH.getNodeTopic("ChassisAssembly"));
+
+        assertEquals("ChassisAssembly", edgeNodeName);
+    }
+
+    @Test
+    public void getsDeviceNodeNameFromTopicName() {
+        String deviceNodeName =
+                SparkPlugBTopic.NBIRTH.getDeviceNameFromTopic(SparkPlugBTopic.DBIRTH.getDeviceTopic("ChassisAssembly", "RoboticArm"));
+
+        assertEquals("RoboticArm", deviceNodeName);
+    }
 }

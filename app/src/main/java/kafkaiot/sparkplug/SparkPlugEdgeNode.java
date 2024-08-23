@@ -100,7 +100,7 @@ public class SparkPlugEdgeNode {
             System.out.println("Message: " + template);
             // Actual publish code would go here
             SparkplugBPayload payload = new SparkplugBPayload(new Date(), template.getMetrics(),
-                    getSeqNum(), newUUID(), null);
+                    getSeqNum(), newUUID(), null); //TODO:Why is body null?
 
             mqttClient.publish(topic, new SparkplugBPayloadEncoder().getBytes(payload, false), 0, false);
 
