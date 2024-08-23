@@ -1,23 +1,20 @@
-package kafkaiot;
+package kafkaiot.sparkplug;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
+import kafkaiot.containers.RabitMQWithMqttContainer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,15 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MqttToKafkaIntegrationTest {
 
     private static KafkaContainer kafkaContainer;
-    private static RabbitMQContainer rabbitMQContainer;
+    private static RabitMQWithMqttContainer rabbitMQContainer;
 
     @Before
     public void startContainers() {
         kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.3.9"));
         kafkaContainer.start();
-        rabbitMQContainer = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3"))
-                .withExposedPorts(5672, 1883, 15672) // Expose AMQP, MQTT, and management ports
-                .withPluginsEnabled("rabbitmq_mqtt");
+        rabbitMQContainer = new RabitMQWithMqttContainer();
         rabbitMQContainer.start();
     }
 
@@ -45,15 +40,7 @@ public class MqttToKafkaIntegrationTest {
 
     @Test
     public void factoryChasisAssemblyMonitoring() throws Exception {
-        String binds = rabbitMQContainer.getHost();
-        InspectContainerResponse containerInfo = rabbitMQContainer.getContainerInfo();
-
-        // Simulate PLC
-
-        Integer mappedPort = rabbitMQContainer.getMappedPort(1883);
-        System.out.println("mappedPort = " + mappedPort);
-
-        String mqttListenAddress = "tcp://localhost:" + mappedPort;
+        String mqttListenAddress = rabbitMQContainer.getMqttListenAddress();
         // Start MQTT to Kafka producer
         String bootstrapServers = kafkaContainer.getBootstrapServers();
         new MqttToKafkaProducer(mqttListenAddress,
@@ -84,4 +71,5 @@ public class MqttToKafkaIntegrationTest {
         assertEquals("node1_device1", ddataMessage.key());
 
     }
+
 }

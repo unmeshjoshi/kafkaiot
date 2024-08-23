@@ -1,5 +1,7 @@
-package kafkaiot;
+package kafkaiot.containers;
 
+import kafkaiot.containers.RabitMQWithMqttContainer;
+import kafkaiot.sparkplug.SparkplugBProducer;
 import org.eclipse.paho.client.mqttv3.*;
 
 import org.junit.After;
@@ -10,15 +12,11 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class MqttTest {
-    private GenericContainer rabbitMQContainer;
+    private RabitMQWithMqttContainer rabbitMQContainer;
 
     @Before
     public void startContainers() {
-        rabbitMQContainer = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3"))
-                .withExposedPorts(5672, 1883, 15672) // Expose AMQP, MQTT, and management ports
-                .withPluginsEnabled("rabbitmq_mqtt");
-        ; // Expose MQTT port
-
+        rabbitMQContainer = new RabitMQWithMqttContainer();
         rabbitMQContainer.start();
     }
 
@@ -30,15 +28,8 @@ public class MqttTest {
 
     @Test
     public void produceAndConsumeMqtt() throws MqttException {
-        Integer mappedPort = rabbitMQContainer.getMappedPort(1883);
-
-        String host = "localhost";
-        String broker = "tcp://" + host + ":" + mappedPort;
-
-        System.out.println("broker = " + broker);
-
         String clientId = MqttAsyncClient.generateClientId();
-        MqttClient client = new MqttClient(broker, clientId);
+        MqttClient client = new MqttClient(rabbitMQContainer.getMqttListenAddress(), clientId);
         MqttConnectOptions options = new MqttConnectOptions();
         client.connect(options);
 
@@ -64,7 +55,7 @@ public class MqttTest {
 
             client.subscribe(topic, subQos);
 
-            SparkplugBProducer plc = new SparkplugBProducer(broker);
+            SparkplugBProducer plc = new SparkplugBProducer(rabbitMQContainer.getMqttListenAddress());
             plc.produceSparkPlugBMessage();
 
             client.disconnect();

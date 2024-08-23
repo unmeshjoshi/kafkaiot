@@ -5,18 +5,15 @@ import org.eclipse.tahu.message.model.Metric;
 import org.eclipse.tahu.message.model.Metric.MetricBuilder;
 import org.eclipse.tahu.message.model.Template;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+
 import org.eclipse.tahu.message.model.*;
 
 import static org.eclipse.tahu.message.model.Template.*;
 
 
-public class UDTExample {
+public class SparkPlugUDTTestDataBuilder {
 
     // Create a UDT for the Chassis Assembly Station
     public Template createChassisAssemblyUDT() throws SparkplugException {

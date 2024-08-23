@@ -1,4 +1,4 @@
-package kafkaiot.sparkplug.topics;
+package kafkaiot.sparkplug;
 
 import kafkaiot.sparkplug.SparkPlugBTopic;
 import org.junit.Test;

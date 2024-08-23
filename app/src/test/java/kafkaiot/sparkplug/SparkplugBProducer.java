@@ -1,4 +1,4 @@
-package kafkaiot;
+package kafkaiot.sparkplug;
 
 import org.eclipse.paho.client.mqttv3.*;
 

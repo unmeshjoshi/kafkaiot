@@ -11,7 +11,7 @@
  *   Cirrus Link Solutions - initial implementation
  ********************************************************************************/
 
-package kafkaiot;
+package kafkaiot.sparkplug;
 
 import org.apache.kafka.test.TestUtils;
 import org.eclipse.paho.client.mqttv3.*;
@@ -54,7 +54,7 @@ import java.lang.String;
  * An example Sparkplug B application with UDTs from
  * https://github.com/eclipse/tahu. Enhanced it to use testcontainers.
  */
-public class SparkplugUDTExample implements MqttCallbackExtended {
+public class SparkplugUDTExampleTest implements MqttCallbackExtended {
 
     private RabbitMQContainer rabbitMQContainer;
 

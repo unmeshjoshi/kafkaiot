@@ -1,6 +1,6 @@
 package kafkaiot.sparkplug;
 
-import kafkaiot.SchemaRegistryContainer;
+import kafkaiot.containers.ConfluentKafkaContainer;
 import org.eclipse.tahu.SparkplugException;
 import org.eclipse.tahu.message.model.Template;
 import org.junit.After;
@@ -10,13 +10,14 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class SchemaRegistryIntegrationTest {
-    private SchemaRegistryContainer schemaRegistryContainer;
+    private ConfluentKafkaContainer kafkaContainer;
     private RabbitMQContainer rabbitMQContainer;
 
     @Before
     public void startContainers() {
-        schemaRegistryContainer = new SchemaRegistryContainer();
-        schemaRegistryContainer.start();
+        kafkaContainer = new ConfluentKafkaContainer();
+        kafkaContainer.start();
+
         rabbitMQContainer = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3"))
                 .withExposedPorts(5672, 1883, 15672) // Expose AMQP, MQTT, and management ports
                 .withPluginsEnabled("rabbitmq_mqtt");
@@ -25,22 +26,24 @@ public class SchemaRegistryIntegrationTest {
 
     @After
     public void stopContainers() {
-        schemaRegistryContainer.stop();
+        kafkaContainer.stop();
         rabbitMQContainer.stop();
     }
     @Test
     public void registersSchemasFromDBirthMessagesToSchemaRegistry() throws SparkplugException {
-        UDTExample example = new UDTExample();
-
+        SparkPlugUDTTestDataBuilder testdataBuilder = new SparkPlugUDTTestDataBuilder();
         // Create UDTs for each device
-        Template chassisAssemblyTemplate = example.createChassisAssemblyUDT();
-        Template robotArmTemplate = example.createRobotArmUDT();
+        Template chassisAssemblyUDTTemplate = testdataBuilder.createChassisAssemblyUDT();
+        Template robotArmUDTTemplate = testdataBuilder.createRobotArmUDT();
 
         // Create SparkPlugDevice instances
         SparkPlugEdgeNode chassisAssemblyDevice = new SparkPlugEdgeNode("ChassisAssembly",
-                chassisAssemblyTemplate);
+                chassisAssemblyUDTTemplate);
         chassisAssemblyDevice.addDevice(new SparkPlugDevice("RobotArm",
-                robotArmTemplate));
+                robotArmUDTTemplate));
+
+
+
 
     }
 }
