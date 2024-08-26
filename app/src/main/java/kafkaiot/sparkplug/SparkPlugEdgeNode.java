@@ -1,6 +1,7 @@
 package kafkaiot.sparkplug;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.tahu.SparkplugException;
 import org.eclipse.tahu.message.SparkplugBPayloadEncoder;
 import org.eclipse.tahu.message.model.Metric;
@@ -21,11 +22,19 @@ public class SparkPlugEdgeNode {
     private final List<SparkPlugDevice> devices;
     private final MqttClient mqttClient;
 
-    public SparkPlugEdgeNode(String edgeNodeName, Template template, MqttClient mqttClient) {
+    public SparkPlugEdgeNode(String edgeNodeName, Template template,
+                             String mqttListenAddress) throws MqttException {
         this.edgeNodeName = edgeNodeName;
         this.template = template;
-        this.mqttClient = mqttClient;
+
+        this.mqttClient = MqttUtils.createMqttClient(mqttListenAddress);
         this.devices = new ArrayList<>();
+    }
+
+    public void sendSparkplugMessages() throws SparkplugException {
+        sendNBIRTH();
+        sendNDATA();
+        sendDeviceMessages();
     }
 
     public String getEdgeNodeName() {

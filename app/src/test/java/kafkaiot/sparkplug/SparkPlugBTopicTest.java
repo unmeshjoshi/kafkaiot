@@ -12,7 +12,7 @@ public class SparkPlugBTopicTest {
         String edgeNode = "EdgeNode1";
         String deviceName = "Device1";
 
-        String expectedTopic = "spBv1.0/sparkplug/b/DDATA/EdgeNode1/Device1";
+        String expectedTopic = "spBv1/0/sparkplug/b/DDATA/EdgeNode1/Device1";
         String actualTopic = topicType.getDeviceTopic(edgeNode, deviceName);
 
         assertEquals("The device topic should be correctly formatted.", expectedTopic, actualTopic);
@@ -23,7 +23,7 @@ public class SparkPlugBTopicTest {
         SparkPlugBTopic topicType = SparkPlugBTopic.NBIRTH;
         String edgeNode = "EdgeNode1";
 
-        String expectedTopic = "spBv1.0/sparkplug/b/NBIRTH/EdgeNode1";
+        String expectedTopic = "spBv1/0/sparkplug/b/NBIRTH/EdgeNode1";
         String actualTopic = topicType.getNodeTopic(edgeNode);
 
         assertEquals("The node topic should be correctly formatted.", expectedTopic, actualTopic);
@@ -33,7 +33,7 @@ public class SparkPlugBTopicTest {
     public void testGetTopic() {
         SparkPlugBTopic topicType = SparkPlugBTopic.STATE;
 
-        String expectedTopic = "spBv1.0/sparkplug/b/STATE/applicationName";
+        String expectedTopic = "spBv1/0/sparkplug/b/STATE/applicationName";
         String actualTopic = topicType.getNodeTopic("applicationName");
 
         assertEquals("The topic should be correctly formatted.", expectedTopic, actualTopic);
@@ -45,7 +45,7 @@ public class SparkPlugBTopicTest {
         String edgeNode = "EdgeNode1";
         String deviceName = SparkPlugBTopic.WILDCARD;
 
-        String expectedTopic = "spBv1.0/sparkplug/b/DDATA/EdgeNode1/#";
+        String expectedTopic = "spBv1/0/sparkplug/b/DDATA/EdgeNode1/#";
         String actualTopic = topicType.getDeviceTopic(edgeNode, deviceName);
 
         assertEquals("The device topic with wildcard should be correctly formatted.", expectedTopic, actualTopic);
@@ -56,7 +56,7 @@ public class SparkPlugBTopicTest {
         SparkPlugBTopic topicType = SparkPlugBTopic.NDATA;
         String edgeNode = SparkPlugBTopic.WILDCARD;
 
-        String expectedTopic = "spBv1.0/sparkplug/b/NDATA/#";
+        String expectedTopic = "spBv1/0/sparkplug/b/NDATA/#";
         String actualTopic = topicType.getNodeTopic(edgeNode);
 
         assertEquals("The node topic with wildcard should be correctly formatted.", expectedTopic, actualTopic);

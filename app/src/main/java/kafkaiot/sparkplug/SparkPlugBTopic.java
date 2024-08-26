@@ -12,7 +12,8 @@ public enum SparkPlugBTopic {
 
     public static final String WILDCARD = "#"; // Public constant for wildcard
 
-    private static final String NAMESPACE = "spBv1.0";
+    private static final String NAMESPACE = "spBv1/0"; //. is replaced by /
+    // in topic name..
     private static final String GROUP_ID = "sparkplug/b";
 
     private final String topicType;
