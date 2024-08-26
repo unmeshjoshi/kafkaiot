@@ -1,5 +1,6 @@
 package kafkaiot.sparkplug;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import org.apache.avro.Schema;
@@ -89,6 +90,7 @@ public class SparkPlugBApplication {
         return inboundPayload;
     }
 
+    @VisibleForTesting
     public boolean hasRegisteredSchemaFor(String deviceName) throws RestClientException, IOException {
         return schemaRegistryClient.getAllVersions(deviceName)
                 .size() > 0;
