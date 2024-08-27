@@ -68,7 +68,7 @@ public class SparkPlugEdgeNode {
 
     private void sendDeviceDataMessages() {
         for (SparkPlugDevice device : devices) {
-            SparkPlugDevice.DeviceMessage ddata = device.getDDATA();
+            SparkPlugDevice.DeviceMessage ddata = device.getDDATA(edgeNodeName);
             publishMessage(ddata.topic, ddata.template);
         }
 
@@ -81,7 +81,7 @@ public class SparkPlugEdgeNode {
     }
 
     private void sendDBirth(SparkPlugDevice device) {
-        SparkPlugDevice.DeviceMessage dbirth = device.createDBIRTH();
+        SparkPlugDevice.DeviceMessage dbirth = device.createDBIRTH(edgeNodeName);
         publishMessage(dbirth.topic, dbirth.template);
     }
 

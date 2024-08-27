@@ -30,13 +30,13 @@ public class SparkPlugDevice {
         }
     }
 
-    public DeviceMessage createDBIRTH() {
-        return new DeviceMessage(SparkPlugBTopic.DBIRTH.getDeviceTopic("ChassisAssembly",
+    public DeviceMessage createDBIRTH(String edgeNodeName) {
+        return new DeviceMessage(SparkPlugBTopic.DBIRTH.getDeviceTopic(edgeNodeName,
                 deviceName), createDBIRTHTemplate());
     }
 
-    public DeviceMessage getDDATA() {
-        return new DeviceMessage(SparkPlugBTopic.DDATA.getDeviceTopic("ChassisAssembly",
+    public DeviceMessage getDDATA(String edgeNodeName) {
+        return new DeviceMessage(SparkPlugBTopic.DDATA.getDeviceTopic(edgeNodeName,
                 deviceName), createDDATATemplate());
     }
 

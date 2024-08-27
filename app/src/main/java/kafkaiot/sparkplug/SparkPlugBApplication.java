@@ -23,48 +23,44 @@ public class SparkPlugBApplication {
     }
 
     public void subcribeForSparkplugMessages(String edgeNodeName) throws MqttException {
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                // Log the loss of connection
-                System.out.println("Connection lost = " + cause);
+        mqttClient.setCallback(new SparkplugMessageCallback());
+        subscribeToTopics(edgeNodeName);
+    }
+
+    private class SparkplugMessageCallback implements MqttCallback {
+        @Override
+        public void connectionLost(Throwable cause) {
+            System.out.println("Connection lost: " + cause);
+        }
+
+        @Override
+        public void messageArrived(String topic, MqttMessage message) {
+            try {
+                System.out.println("Message Arrived on topic " + topic);
+                SparkplugBPayload inboundPayload = decodeSparkplugMessage(message);
+                handleMessage(topic, inboundPayload);
+            } catch (Exception e) {
+                System.out.println("Error processing message: " + e.getMessage());
+                throw new RuntimeException(e);
             }
+        }
 
-            @Override //TODO: We should have separate subscribers for NBIRTH
-            // and DBIRTH, so that schema creation can be separated from this
-            // method.
-            public void messageArrived(String topic, MqttMessage message) {
-                try {
-                    System.out.println("Message Arrived on topic " + topic);
-                    SparkplugBPayload inboundPayload = decodeSparkplugMessage(message);
-                    if (isNBirth(topic)) {
-                        handleNBirthMessage(topic, inboundPayload);
+        @Override
+        public void deliveryComplete(IMqttDeliveryToken token) {
+            // Log the completion of message delivery if needed
+        }
+    }
 
-                    } else if (isDBirth(topic)) {
-                        handleDBirthMessage(topic, inboundPayload);
-                    }
+    private void handleMessage(String topic, SparkplugBPayload payload) throws IOException, RestClientException {
+        if (SparkPlugBTopic.NBIRTH.matchesTopicName(topic)) {
+            handleNBirthMessage(topic, payload);
+        } else if (SparkPlugBTopic.DBIRTH.matchesTopicName(topic)) {
+            handleDBirthMessage(topic, payload);
+        }
+        // Add handlers for other message types as needed
+    }
 
-                } catch (Exception e) {
-                    System.out.println("e = " + e.getMessage());
-                    throw new RuntimeException(e);
-                }
-
-            }
-
-            private boolean isDBirth(String topic) {
-                return topic.contains(SparkPlugBTopic.DBIRTH.name());
-            }
-
-            private boolean isNBirth(String topic) {
-                return topic.contains(SparkPlugBTopic.NBIRTH.name());
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // Log the completion of message delivery
-            }
-        });
-
+    private void subscribeToTopics(String edgeNodeName) throws MqttException {
         mqttClient.subscribe(SparkPlugBTopic.NBIRTH.getNodeTopic(SparkPlugBTopic.WILDCARD));
         mqttClient.subscribe(SparkPlugBTopic.NDATA.getNodeTopic(SparkPlugBTopic.WILDCARD));
         mqttClient.subscribe(SparkPlugBTopic.DBIRTH.getDeviceTopic(edgeNodeName, SparkPlugBTopic.WILDCARD));

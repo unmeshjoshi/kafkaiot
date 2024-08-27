@@ -57,4 +57,8 @@ public enum SparkPlugBTopic {
         String[] parts = topic.split("/");
         return parts[6];
     }
+
+    public boolean matchesTopicName(String topic) {
+        return topic.toUpperCase().contains(this.name());
+    }
 }
