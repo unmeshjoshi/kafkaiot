@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 public class SchemaRegistryIntegrationTest {
     private ConfluentKafkaContainer kafkaContainer;
     private RabitMQWithMqttContainer rabbitMQContainer;
@@ -21,8 +23,6 @@ public class SchemaRegistryIntegrationTest {
 
         rabbitMQContainer = new RabitMQWithMqttContainer();
         rabbitMQContainer.start();
-
-
     }
 
     @After
@@ -34,30 +34,40 @@ public class SchemaRegistryIntegrationTest {
     @Test
     public void registersSchemasFromDBirthMessagesToSchemaRegistry() throws SparkplugException, MqttException, InterruptedException {
         // Create UDTs for each device
-        String edgeNodeName = "ChassisAssembly";
-        SparkPlugEdgeNode edgeNode = createEdgeNodeInstance(edgeNodeName);
+        SparkPlugEdgeNode edgeNode = createEdgeNodeInstance();
+
 
         SparkPlugBApplication primaryApplication =
                 new SparkPlugBApplication(kafkaContainer.getSchemaRegistryUrl(),
-                            rabbitMQContainer.getMqttListenAddress());
+                            rabbitMQContainer.getMqttListenAddress(),
+                        kafkaContainer.getBootstrapServers());
 
-        primaryApplication.subcribeForSparkplugMessages(edgeNodeName);
+        createKafkaTopics(primaryApplication, edgeNode);
+
+        primaryApplication.subcribeForSparkplugMessages(edgeNode.getEdgeNodeName());
 
         edgeNode.sendSparkplugMessages();
 
-        //TODO: How to store schema Ids to be used for DData and NData messages?
         //TODO: How to handle schema updates?
         //TODO: How to handle errors when schema changes are not compatible?
-        TestUtils.waitForCondition(() -> primaryApplication.hasRegisteredSchemaFor("ChassisAssembly")
-                && primaryApplication.hasRegisteredSchemaFor("RobotArm"),
+        TestUtils.waitForCondition(() -> primaryApplication.hasRegisteredSchemaFor(edgeNode.getEdgeNodeName() + "-value")
+                && primaryApplication.hasRegisteredSchemaFor(edgeNode.getDevices().get(0).getDeviceName() + "-value"),
                 10000, 2000,
                 () -> "Waiting for Node and Device schemas to be registered");
 
     }
 
+    private static void createKafkaTopics(SparkPlugBApplication primaryApplication, SparkPlugEdgeNode edgeNode) {
+        primaryApplication.createTopic(edgeNode.getEdgeNodeName(), 3, 1);
+        List<SparkPlugDevice> devices = edgeNode.getDevices();
+        for (SparkPlugDevice device : devices) {
+            primaryApplication.createTopic(device.getDeviceName(), 3, 1);
+        }
+    }
 
-    @NotNull
-    private SparkPlugEdgeNode createEdgeNodeInstance(String edgeNodeName) throws MqttException, SparkplugException {
+
+    private SparkPlugEdgeNode createEdgeNodeInstance() throws MqttException, SparkplugException {
+        String edgeNodeName = "ChassisAssembly";
         SparkPlugUDTTestDataBuilder testdataBuilder = new SparkPlugUDTTestDataBuilder();
         SparkPlugEdgeNode edgeNode = new SparkPlugEdgeNode(edgeNodeName,
                 testdataBuilder.createChassisAssemblyUDT(), rabbitMQContainer.getMqttListenAddress());

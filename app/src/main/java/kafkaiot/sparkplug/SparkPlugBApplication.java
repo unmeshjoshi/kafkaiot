@@ -1,24 +1,21 @@
 package kafkaiot.sparkplug;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import org.apache.avro.Schema;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.tahu.message.SparkplugBPayloadDecoder;
 import org.eclipse.tahu.message.model.SparkplugBPayload;
 
 import java.io.IOException;
 
+//TODO: Does this need to be a fully compliant SparkplugB Primary Application?
 public class SparkPlugBApplication {
-    private final CachedSchemaRegistryClient schemaRegistryClient;
-    private final AvroSchemaMapper avroSchemaMapper = new AvroSchemaMapper();
     private final MqttClient mqttClient;
+    private final KafkaConnector kafkaConnector;
 
-    public SparkPlugBApplication(String schemaRegistryUrl, String mqttListenAddress) throws MqttException {
-        schemaRegistryClient
-                = new CachedSchemaRegistryClient(schemaRegistryUrl,
-                100);
+    public SparkPlugBApplication(String schemaRegistryUrl, String mqttListenAddress, String bootstrapServers) throws MqttException {
+        this.kafkaConnector = new KafkaConnector(schemaRegistryUrl,
+                bootstrapServers);
         mqttClient = MqttUtils.createMqttClient(mqttListenAddress);
     }
 
@@ -56,9 +53,17 @@ public class SparkPlugBApplication {
             handleNBirthMessage(topic, payload);
         } else if (SparkPlugBTopic.DBIRTH.matchesTopicName(topic)) {
             handleDBirthMessage(topic, payload);
+        } else if (SparkPlugBTopic.DDATA.matchesTopicName(topic)) {
+            handleDDataMessage(topic, payload);
         }
         // Add handlers for other message types as needed
     }
+
+    private void handleDDataMessage(String topic, SparkplugBPayload payload) throws RestClientException, IOException {
+        String deviceNodeName = SparkPlugBTopic.DBIRTH.getDeviceNameFromTopic(topic);
+        kafkaConnector.produce(deviceNodeName, payload);
+   }
+
 
     private void subscribeToTopics(String edgeNodeName) throws MqttException {
         mqttClient.subscribe(SparkPlugBTopic.NBIRTH.getNodeTopic(SparkPlugBTopic.WILDCARD));
@@ -68,27 +73,33 @@ public class SparkPlugBApplication {
     }
 
     private void handleDBirthMessage(String topic, SparkplugBPayload inboundPayload) throws IOException, RestClientException {
-        String deviceNodeName = SparkPlugBTopic.DBIRTH.getDeviceNameFromTopic(topic);
-        Schema schema = avroSchemaMapper.generateAvroSchemaFromTemplate(inboundPayload.getMetrics(), deviceNodeName);
-        schemaRegistryClient.register(deviceNodeName, schema);
+        String deviseName = SparkPlugBTopic.DBIRTH.getDeviceNameFromTopic(topic);
+        kafkaConnector.registerSchema(deviseName, inboundPayload);
     }
 
     private void handleNBirthMessage(String topic, SparkplugBPayload inboundPayload) throws IOException, RestClientException {
         String edgeNodeName =
                 SparkPlugBTopic.NBIRTH.getEdgeNodeNameFromTopic(topic);
-        Schema schema = avroSchemaMapper.generateAvroSchemaFromTemplate(inboundPayload.getMetrics(), edgeNodeName);
-        schemaRegistryClient.register(edgeNodeName, schema);
+        kafkaConnector.registerSchema(edgeNodeName, inboundPayload);
     }
 
-    private static SparkplugBPayload decodeSparkplugMessage(MqttMessage message) throws Exception {
+    private SparkplugBPayload decodeSparkplugMessage(MqttMessage message) throws Exception {
         SparkplugBPayloadDecoder decoder = new SparkplugBPayloadDecoder();
         SparkplugBPayload inboundPayload = decoder.buildFromByteArray(message.getPayload(), null);
         return inboundPayload;
     }
 
+    public void createTopic(String topicName, int numPartitions,
+                            int replicationFactor) {
+        kafkaConnector.createTopic(topicName, numPartitions, (short) replicationFactor);
+    }
+
     @VisibleForTesting
     public boolean hasRegisteredSchemaFor(String deviceName) throws RestClientException, IOException {
-        return schemaRegistryClient.getAllVersions(deviceName)
-                .size() > 0;
+        return kafkaConnector.hasRegisteredSchemaFor(deviceName);
+    }
+
+    public void close() {
+        kafkaConnector.close();
     }
 }

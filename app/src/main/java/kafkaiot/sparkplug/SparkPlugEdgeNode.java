@@ -109,7 +109,7 @@ public class SparkPlugEdgeNode {
             System.out.println("Message: " + template);
             // Actual publish code would go here
             SparkplugBPayload payload = new SparkplugBPayload(new Date(), template.getMetrics(),
-                    getSeqNum(), newUUID(), null); //TODO:Why is body null?
+                    incrementAndGetSequenceNumber(), newUUID(), null); //TODO:Why is body null?
 
             mqttClient.publish(topic, new SparkplugBPayloadEncoder().getBytes(payload, false), 0, false);
 
@@ -122,7 +122,7 @@ public class SparkPlugEdgeNode {
     private int seq = 0;
 
     // Used to add the sequence number
-    private long getSeqNum() throws Exception {
+    private long incrementAndGetSequenceNumber() throws Exception {
         System.out.println("seq: " + seq);
         if (seq == 256) {
             seq = 0;
@@ -132,5 +132,9 @@ public class SparkPlugEdgeNode {
 
     private String newUUID() {
         return java.util.UUID.randomUUID().toString();
+    }
+
+    public List<SparkPlugDevice> getDevices() {
+        return devices;
     }
 }

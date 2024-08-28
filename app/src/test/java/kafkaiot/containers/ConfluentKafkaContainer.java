@@ -46,4 +46,8 @@ public class ConfluentKafkaContainer {
         schemaRegistryContainer.stop();
         kafkaContainer.stop();
     }
+
+    public String getBootstrapServers() {
+        return kafkaContainer.getBootstrapServers();
+    }
 }
