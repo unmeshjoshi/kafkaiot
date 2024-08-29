@@ -2,11 +2,21 @@ package kafkaiot.sparkplug;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.tahu.message.SparkplugBPayloadDecoder;
 import org.eclipse.tahu.message.model.SparkplugBPayload;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 //TODO: Does this need to be a fully compliant SparkplugB Primary Application?
 public class SparkPlugBApplication {
@@ -98,6 +108,24 @@ public class SparkPlugBApplication {
     public boolean hasRegisteredSchemaFor(String deviceName) throws RestClientException, IOException {
         return kafkaConnector.hasRegisteredSchemaFor(deviceName);
     }
+
+    public List consumeKafkaMessages(String topic) {
+        KafkaConsumer consumer = kafkaConnector.createConsumer();
+        consumer.subscribe(Collections.singleton(topic));
+        return pollRecords(consumer);
+    }
+
+    private static List<GenericRecord> pollRecords(KafkaConsumer consumer) {
+        ConsumerRecords<String, GenericRecord> records =
+                consumer.poll(Duration.of(1000,
+                        ChronoUnit.MILLIS));
+        List<GenericRecord> genericRecords = new ArrayList<>();
+        for (ConsumerRecord<String, GenericRecord> record : records) {
+            genericRecords.add(record.value());
+        }
+        return genericRecords;
+    }
+
 
     public void close() {
         kafkaConnector.close();

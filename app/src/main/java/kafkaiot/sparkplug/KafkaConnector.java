@@ -2,35 +2,47 @@ package kafkaiot.sparkplug;
 
 import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.tahu.message.model.Metric;
 import org.eclipse.tahu.message.model.SparkplugBPayload;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Future;
 
 class KafkaConnector {
     private final Producer<String, GenericRecord> producer;
     private final AdminClient adminClient;
     private final NodeSchemaRegistry nodeSchemaRegistry;
+    private final String bootstrapServers;
+    private final String schemaRegistryUrl;
 
     public KafkaConnector(String schemaRegistryUrl, String bootstrapServers) {
+        this.schemaRegistryUrl = schemaRegistryUrl;
         this.nodeSchemaRegistry = new NodeSchemaRegistry(schemaRegistryUrl);
+        this.bootstrapServers = bootstrapServers;
 
-        Properties props = kafkaProperties(bootstrapServers, schemaRegistryUrl);
-        this.producer = new KafkaProducer<>(props);
-        this.adminClient = AdminClient.create(props);
+        Map kafkaProperties = producerProps(bootstrapServers, schemaRegistryUrl);
+        this.producer = new KafkaProducer<>(kafkaProperties);
+
+        this.adminClient = AdminClient.create(kafkaProperties);
     }
 
     public boolean topicExists(String topicName) {
@@ -45,12 +57,32 @@ class KafkaConnector {
         }
     }
 
-    private Properties kafkaProperties(String bootstrapServers, String schemaRegistryUrl) {
-        Properties props = new Properties();
-        props.put("bootstrap.servers", bootstrapServers);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
-        props.put("schema.registry.url", schemaRegistryUrl);
+
+    private Map<String, Object> consumerProps(String bootstrapServers,
+                                              String schemaRegistryUrl,
+                                              String group) {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, group);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                KafkaAvroDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        return props;
+    }
+
+    private Map<String, Object> producerProps(String bootstrapServers,
+                                              String schemaRegistryUrl) {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                schemaRegistryUrl);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                KafkaAvroSerializer.class);
         return props;
     }
 
@@ -73,7 +105,16 @@ class KafkaConnector {
         //What is the topic name
         ProducerRecord<String, GenericRecord> producerRecord =
                 new ProducerRecord<>(deviceNodeName, deviceNodeName, record);
-        producer.send(producerRecord);
+        Future<RecordMetadata> send = producer.send(producerRecord);
+        try {
+            ;
+            System.out.println("Producing data on  = " + deviceNodeName +
+                    "topic. offset=" + send.get().offset());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -106,5 +147,12 @@ class KafkaConnector {
     public void close() {
         adminClient.close();
         producer.close();
+    }
+
+    public KafkaConsumer createConsumer() {
+        return
+                new KafkaConsumer<>(consumerProps(bootstrapServers,
+                        schemaRegistryUrl, "SparkPlugBKafka-Group"));
+
     }
 }

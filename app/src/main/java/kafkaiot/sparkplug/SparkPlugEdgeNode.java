@@ -61,9 +61,12 @@ public class SparkPlugEdgeNode {
         publishMessage(SparkPlugBTopic.NDATA.getNodeTopic(edgeNodeName), ndataTemplate);
     }
 
+
     public void sendDeviceMessages() {
         sendDeviceBirthMessages();
-        sendDeviceDataMessages(); //TDODO: do this periodically
+        for (int i = 0; i < 10; i++) {
+            sendDeviceDataMessages(); //TDODO: do this periodically
+        }
     }
 
     private void sendDeviceDataMessages() {
