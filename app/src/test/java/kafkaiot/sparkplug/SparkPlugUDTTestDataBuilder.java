@@ -7,27 +7,39 @@ import org.eclipse.tahu.message.model.Template;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.tahu.message.model.*;
+import org.junit.Test;
 
 import static org.eclipse.tahu.message.model.Template.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class SparkPlugUDTTestDataBuilder {
 
+    @Test
+    public void generateTestTemplate() throws SparkplugException {
+        Template chassisAssemblyUDT = createChassisAssemblyUDT();
+        assertNotNull(chassisAssemblyUDT);
+    }
+
     // Create a UDT for the Chassis Assembly Station
     public Template createChassisAssemblyUDT() throws SparkplugException {
-        List<Metric> metrics = new ArrayList<>();
-        metrics.add(new MetricBuilder("temperature", MetricDataType.Float, 20.5f).createMetric());
-        metrics.add(new MetricBuilder("pressure", MetricDataType.Float, 101.3f).createMetric());
-        metrics.add(new MetricBuilder("status", MetricDataType.String, "Operational").createMetric());
+        String jsonString = "{\n" +
+                "  \"version\": \"v1.0\",\n" +
+                "  \"templateRef\": \"ChassisAssembly\",\n" +
+                "  \"definition\": true,\n" +
+                "  \"metrics\": [\n" +
+                "    {\"name\": \"temperature\", \"type\": \"Double\", " +
+                "\"value\": 20.5},\n" +
+                "    {\"name\": \"pressure\", \"type\": \"Double\", \"value\": 101.3},\n" +
+                "    {\"name\": \"status\", \"type\": \"String\", \"value\": \"Operational\"}\n" +
+                "  ]\n" +
+                "}";
 
-        return new TemplateBuilder()
-                .version("v1.0")
-                .templateRef("ChassisAssembly")
-                .definition(true)
-                .addMetrics(metrics)
-                .createTemplate();
+        SparkPlugUDTBuilder builder = new SparkPlugUDTBuilder();
+        return builder.createTemplateFromJson(jsonString);
     }
 
     // Create UDT for Robot Arm

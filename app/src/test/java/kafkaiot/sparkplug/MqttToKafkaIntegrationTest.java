@@ -69,7 +69,6 @@ public class MqttToKafkaIntegrationTest {
 
         ConsumerRecord<String, String> ddataMessage = iterator.next();
         assertEquals("node1_device1", ddataMessage.key());
-
     }
 
 }

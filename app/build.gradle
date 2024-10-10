@@ -18,6 +18,12 @@ dependencies {
     implementation group: 'org.eclipse.tahu', name: 'tahu-core', version: '1.' +
             '0.10'
 
+    // Jackson Databind for working with JSON objects
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0'
+    // Jackson Core (required by jackson-databind)
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.14.0'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.0'
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:4.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:4.8.2'
     testImplementation 'org.apache.kafka:kafka_2.13:3.3.2:test'
@@ -26,6 +32,22 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers:1.17.6'
     testImplementation 'org.testcontainers:kafka:1.17.6'
     testImplementation 'org.testcontainers:rabbitmq:1.17.6'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation "org.apache.lucene:lucene-core:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-backward-codecs:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-grouping:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-highlighter:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-join:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-memory:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-misc:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-queries:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-queryparser:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-sandbox:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-spatial-extras:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-spatial3d:${luceneVersion}"
+    implementation "org.apache.lucene:lucene-suggest:${luceneVersion}"
 }
 
 test {

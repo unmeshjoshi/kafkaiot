@@ -70,7 +70,8 @@ public class SparkPlugBApplication {
     }
 
     private void handleDDataMessage(String topic, SparkplugBPayload payload) throws RestClientException, IOException {
-        String deviceNodeName = SparkPlugBTopic.DBIRTH.getDeviceNameFromTopic(topic);
+        String deviceNodeName =
+                SparkPlugBTopic.DDATA.getDeviceNameFromTopic(topic);
         kafkaConnector.produce(deviceNodeName, payload);
    }
 

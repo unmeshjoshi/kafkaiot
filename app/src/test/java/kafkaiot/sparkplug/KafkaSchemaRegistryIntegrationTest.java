@@ -2,6 +2,8 @@ package kafkaiot.sparkplug;
 
 import kafkaiot.containers.ConfluentKafkaContainer;
 import kafkaiot.containers.RabitMQWithMqttContainer;
+import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.Cluster;
 import org.apache.kafka.test.TestUtils;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.tahu.SparkplugException;
@@ -11,6 +13,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class KafkaSchemaRegistryIntegrationTest {
@@ -62,23 +65,12 @@ public class KafkaSchemaRegistryIntegrationTest {
             list.set(primaryApplication.consumeKafkaMessages(edgeNode.getDevices().get(0).getDeviceName()));
             return list.get().size() > 0;
         }, 50000, 2000, ()->"Waiting for Kafka messages to be consumed");
-
-
-        for (Object o : list.get()) {
-            System.out.println("ConsumedMessage = " + o);
-        }
-
-
     }
 
+    //Create topic per edge node. Partition will be per device.
     private static void createKafkaTopics(SparkPlugBApplication primaryApplication, SparkPlugEdgeNode edgeNode) {
         primaryApplication.createTopic(edgeNode.getEdgeNodeName(), 1, 1);
-        List<SparkPlugDevice> devices = edgeNode.getDevices();
-        for (SparkPlugDevice device : devices) {
-            primaryApplication.createTopic(device.getDeviceName(), 1, 1);
-        }
     }
-
 
     private SparkPlugEdgeNode createEdgeNodeInstance() throws MqttException, SparkplugException {
         String edgeNodeName = "ChassisAssembly";
@@ -89,5 +81,4 @@ public class KafkaSchemaRegistryIntegrationTest {
                 testdataBuilder.createRobotArmUDT()));
         return edgeNode;
     }
-
 }
