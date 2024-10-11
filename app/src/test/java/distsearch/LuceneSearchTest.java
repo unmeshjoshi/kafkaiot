@@ -15,7 +15,7 @@ public class LuceneSearchTest {
     @Test
     public void testIndexingWithControlledClock() throws Exception {
         TestClock clock = new TestClock(Instant.parse("2023-06-01T00:00:00Z"));
-        IndexService indexService = new IndexService(clock,"test_index", TestUtils.tempDir().getAbsolutePath(), 1);
+        IndexService indexService = new IndexService(clock,"test_index", TestUtils.tempDir().getAbsolutePath(), 5);
 
         String json1 = "{\"_id\":\"1\",\"title\":\"Test Document 1\",\"content\":\"This is a test document\"}";
         indexService.indexDocument(json1);
